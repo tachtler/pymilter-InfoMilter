@@ -51,6 +51,23 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --version         show program's version number and exit
 ```
+## Python dependencies
+The following dependencie are required
+```bash
+# pip3 list --format=columns
+Package    Version    
+---------- -----------   
+ipaddress  1.0.22
+log4p      2019.7.13.3
+pymilter   1.0.3
+```
+Under **CentOS-7** the following commands can be used to fulfill the dependencies:
+```bash
+# yum install python36 python36-libs python36-devel python36-pip
+# yum install python36-pymilter
+# pip3 install log4p
+# pip3 install ipaddress
+```
 
 ## Python-File execution
 The **execution of the Python file** could be done, for example on a Linux ```shell``` with following command:
@@ -390,9 +407,6 @@ Greetings
 A list of possible changes for the future:
 
 - Add a setup.py file 
-- Add the possibility to use a configuration file.
-- Add a systemd script.
-- Build a rpm package for CentOS-7.
 
 ## Thanks to
 Many thanks for the great work, support and help to realize this project:
