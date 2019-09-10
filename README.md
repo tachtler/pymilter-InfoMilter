@@ -75,7 +75,7 @@ tcp        0      0 127.0.0.1:10099       0.0.0.0:*          LISTEN     0       
 ```
 
 ## Postfix Milter integration
-In order to include InforMilter.jar with ![Postfix](http://www.postfix.org/), minimal adjustments are required in the two following configuration files of Postfix.
+In order to include InforMilter.py with ![Postfix](http://www.postfix.org/), minimal adjustments are required in the two following configuration files of Postfix.
   - ```/etc/postfix/main.cf```
   - ```/etc/postfix/master.cf```
 
@@ -154,7 +154,7 @@ Connection closed by foreign host.
 ```
 
 ## LOG-File output
-While using the InfoMilter.jar the following output will be written to the **standard command output (```screen / shell```) and a folder named logs will be created, which includes the ```InfoMilter-debug.log``` file and ```InfoMilter-errors.log```.**
+While using the InfoMilter.py the following output will be written to the **standard command output (```screen / shell```) and a folder named logs will be created, which includes the ```InfoMilter-debug.log``` file and ```InfoMilter-errors.log```.**
 
 An **example output file** could be look like this. (It's based on the **Telnet e-Mail-Test** - **telnet-session** shown above):
 ```
