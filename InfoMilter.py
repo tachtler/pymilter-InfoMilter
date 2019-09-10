@@ -47,6 +47,7 @@ https://pythonhosted.org/pymilter/classMilter_1_1Milter.html
 
 '''
 RPM installation CentOS-7 for python36 from EPEL:
+    # yum install python36 python36-libs python36-devel python36-pip
     # yum install python36-pymilter
     # pip3 install log4p
     # pip3 install ipaddress
@@ -132,7 +133,7 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{if_addr}')", str(self.getsymval('{if_addr}')))
         itemLine("self.getsymval('{if_name}')", str(self.getsymval('{if_name}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("connect")
         return Milter.CONTINUE
     
@@ -148,7 +149,7 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
         itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("helo/ehlo")    
         return Milter.CONTINUE
 
@@ -170,7 +171,7 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{mail_host}')", str(self.getsymval('{mail_host}')))
         itemLine("self.getsymval('{mail_mailer}')", str(self.getsymval('{mail_mailer}')))         
 
-        allmarco(self)
+        allmacro(self)
         footLine("envfrom")    
         return Milter.CONTINUE
     
@@ -184,7 +185,7 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{rcpt_host}')", str(self.getsymval('{rcpt_host}')))
         itemLine("self.getsymval('{rcpt_mailer}')", str(self.getsymval('{rcpt_mailer}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("envrcpt")
         headLine("header")    
         return Milter.CONTINUE        
@@ -206,13 +207,13 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
         itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("header")
         
         headLine("eoh")
         itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("eoh")
         return Milter.CONTINUE   
 
@@ -221,7 +222,7 @@ class InfoMilter(Milter.Milter):
         itemLine("body", str(chunk))
         itemLine(" - decoded (UTF-8)", str(chunk.decode('UTF-8')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("body")
         return Milter.CONTINUE
 
@@ -238,24 +239,24 @@ class InfoMilter(Milter.Milter):
         itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
         itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
-        allmarco(self)
+        allmacro(self)
         footLine("eom")
         return Milter.CONTINUE   
 
     def abort(self):
         headLine("abort")
-        allmarco(self)
+        allmacro(self)
         footLine("abort")
         return Milter.CONTINUE
 
     def close(self):
         headLine("close")
-        allmarco(self)
+        allmacro(self)
         footLine("close")        
         return Milter.CONTINUE
 
 
-def allmarco(self):
+def allmacro(self):
     lineLine()
     itemLine("self.getsymval('{j}')", str(self.getsymval('{j}')))
     itemLine("self.getsymval('{_}')", str(self.getsymval('{_}')))
