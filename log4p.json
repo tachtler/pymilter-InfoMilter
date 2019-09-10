@@ -1,0 +1,56 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "simple": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        },
+        "detail": {
+            "format": "%(asctime)-15s %(levelname)-5s %(filename)s +%(lineno)d %(funcName)s [%(threadName)s]: %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
+        "debug_console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
+        "debug_file_handler": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "detail",
+            "filename": "InfoMilter-debug.log",
+            "when": "D",
+            "interval": 1,
+            "backupCount": 30,
+            "encoding": "utf8"
+        },
+        "error_file_handler": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "ERROR",
+            "formatter": "detail",
+            "filename": "InfoMilter-errors.log",
+            "maxBytes": 10485760,
+            "backupCount": 2,
+            "encoding": "utf8"
+        }
+    },
+    "loggers": {
+        "__my_def__": {
+            "level": "DEBUG",
+            "handlers": ["debug_console"],
+            "propagate": "no"
+        }
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console"]
+    }
+}
