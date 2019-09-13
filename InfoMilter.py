@@ -51,6 +51,13 @@ RPM installation CentOS-7 for python36 from EPEL:
     # yum install python36-pymilter
     # pip3 install log4p
     # pip3 install ipaddress
+    For pymilter 1.0.4 (latest
+    # yum install gcc
+    # yum install sendmail-devel
+    # systemctl stop sendmail.service
+    # systemctl disable sendmail.service
+    # systemctl enable postfix.service
+    # systemctl start postfix.sevice
 '''
 
 '''
@@ -68,7 +75,7 @@ from argparse import RawDescriptionHelpFormatter
 __all__ = []
 __version__ = 0.1
 __date__ = '2019-09-10'
-__updated__ = '2019-09-10'
+__updated__ = '2019-09-13'
 __author__ = 'Klaus Tachtler <klaus@tachtler.net>'
 __organisation__ = 'Klaus Tachtler'
 
@@ -86,11 +93,51 @@ __port__ = 10099
 __timeout__ = 600
 __flags__ = 0
 
-__clipChar__ = "="
-__lineChar__ = "-"
-__lineCharCount__ = 40
-__listFormat__ = "{:39}:"
-__lineFormat__ = "{:39}: {:1}"
+
+class OutputFormater():
+    '''Formatter for the log output'''
+    
+    def __init__(self, clipChar, lineChar, lineCharCount, listFormat, lineFormat, errorLineFormat):
+        self.clipChar = clipChar
+        self.lineChar = lineChar
+        self.lineCharCount = lineCharCount
+        self.listFormat = listFormat
+        self.lineFormat = lineFormat
+        self.errorLineFormat = errorLineFormat
+    
+    # Line with frame character.
+    def clipLine(self):
+        __log__.info(self.clipChar * self.lineCharCount)
+        
+    # Line with separator character.
+    def lineLine(self):
+        __log__.info(self.lineChar * self.lineCharCount)  
+
+    # Line with key value pair output.    
+    def itemLine(self, itemKey, itemValue):
+        __log__.info(self.lineFormat.format(itemKey, itemValue))
+        
+    # Line with key value pair error output.    
+    def errorLine(self, itemKey, itemValue):
+        __log__.error(self.lineFormat.format(itemKey, itemValue))
+        
+    # Line with start end character with counter for the part.
+    def listLine(self, function, position):
+        __log__.info(self.listFormat.format("sendmail-pymilter - " + position + ": " + function))
+
+    def headLine(self, function):
+        self.clipLine()
+        self.listLine(function, "ENTRY")
+        self.lineLine()
+        
+    def footLine(self, function):
+        self.lineLine()
+        self.listLine(function, "LEAVE")
+        self.clipLine()
+
+
+# Initialize output formatter for the log output.
+__logOutput__ = OutputFormater("=", "-", 40, "{:39}:", "{:39}: {:1}", "{:38}: {:1}")
 
 
 class InfoMilter(Milter.Milter):
@@ -101,200 +148,172 @@ class InfoMilter(Milter.Milter):
         self.id = Milter.uniqueID() 
 
     def connect(self, hostname, family, hostaddr):
-        headLine("connect")
-        itemLine("hostname", hostname)
-        itemLine("family", family)
+        __logOutput__.headLine("connect")
+        __logOutput__.itemLine("hostname", hostname)
+        __logOutput__.itemLine("family", family)
         
         if family == AF_INET:
-            itemLine(" - family", "IPv4 (socket.AF_INET)")
+            __logOutput__.itemLine(" - family", "IPv4 (socket.AF_INET)")
         elif family == AF_INET6:
-            itemLine(" - family", "IPv6 (socket.AF_INET6)")
+            __logOutput__.itemLine(" - family", "IPv6 (socket.AF_INET6)")
         elif family == AF_UNIX:
-            itemLine(" - family", "UNIX (socket.AF_UNIX)")
+            __logOutput__.itemLine(" - family", "UNIX (socket.AF_UNIX)")
         else:
-            itemLine(" - family", "unknown")
+            __logOutput__.itemLine(" - family", "unknown")
         
-        itemLine("hostaddr", str(hostaddr))
+        __logOutput__.itemLine("hostaddr", str(hostaddr))
         
         if family == AF_INET:
-            itemLine(" - address", str(hostaddr[0]))
-            itemLine(" - port", str(hostaddr[1]))
+            __logOutput__.itemLine(" - address", str(hostaddr[0]))
+            __logOutput__.itemLine(" - port", str(hostaddr[1]))
         elif family == AF_INET6:
-            itemLine(" - address", str(hostaddr[2]))
-            itemLine(" - port", str(hostaddr[3]))
+            __logOutput__.itemLine(" - address", str(hostaddr[2]))
+            __logOutput__.itemLine(" - port", str(hostaddr[3]))
         elif family == AF_UNIX:   
-            itemLine(" - socket", "UNIX")
+            __logOutput__.temLine(" - socket", "UNIX")
         else:
-            itemLine(" - result", "unknown")                        
+            __logOutput__.itemLine(" - result", "unknown")                        
         
-        lineLine()
-        itemLine("self.getsymval('{client_connections}')", str(self.getsymval('{client_connections}')))
-        itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
-        itemLine("self.getsymval('{if_addr}')", str(self.getsymval('{if_addr}')))
-        itemLine("self.getsymval('{if_name}')", str(self.getsymval('{if_name}')))
+        __logOutput__.lineLine()
+        __logOutput__.itemLine("self.getsymval('{client_connections}')", str(self.getsymval('{client_connections}')))
+        __logOutput__.itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
+        __logOutput__.itemLine("self.getsymval('{if_addr}')", str(self.getsymval('{if_addr}')))
+        __logOutput__.itemLine("self.getsymval('{if_name}')", str(self.getsymval('{if_name}')))
         
         allmacro(self)
-        footLine("connect")
+        __logOutput__.footLine("connect")
         return Milter.CONTINUE
     
     def hello(self, heloname):
-        headLine("helo/ehlo")
-        itemLine("heloname", heloname)
+        __logOutput__.headLine("helo/ehlo")
+        __logOutput__.itemLine("heloname", heloname)
         
-        lineLine()  
-        itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
-        itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
-        itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
-        itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
-        itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
-        itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
+        __logOutput__.lineLine()  
+        __logOutput__.itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
+        __logOutput__.itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
+        __logOutput__.itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
+        __logOutput__.itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
+        __logOutput__.itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
+        __logOutput__.itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
         allmacro(self)
-        footLine("helo/ehlo")    
+        __logOutput__.footLine("helo/ehlo")    
         return Milter.CONTINUE
 
     def envfrom(self, mailfrom, *parameter):
-        headLine("envfrom")
-        itemLine("mailfrom", mailfrom)
-        itemLine(" - parameter", str(parameter))
+        __logOutput__.headLine("envfrom")
+        __logOutput__.itemLine("mailfrom", mailfrom)
+        __logOutput__.itemLine(" - parameter", str(parameter))
 
-        lineLine()
-        itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
-        itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
-        itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
-        itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
-        itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
-        itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
-        itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))        
-        itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
-        itemLine("self.getsymval('{mail_addr}')", str(self.getsymval('{mail_addr}')))
-        itemLine("self.getsymval('{mail_host}')", str(self.getsymval('{mail_host}')))
-        itemLine("self.getsymval('{mail_mailer}')", str(self.getsymval('{mail_mailer}')))         
+        __logOutput__.lineLine()
+        __logOutput__.itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
+        __logOutput__.itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
+        __logOutput__.itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
+        __logOutput__.itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
+        __logOutput__.itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
+        __logOutput__.itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
+        __logOutput__.itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))        
+        __logOutput__.itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
+        __logOutput__.itemLine("self.getsymval('{mail_addr}')", str(self.getsymval('{mail_addr}')))
+        __logOutput__.itemLine("self.getsymval('{mail_host}')", str(self.getsymval('{mail_host}')))
+        __logOutput__.itemLine("self.getsymval('{mail_mailer}')", str(self.getsymval('{mail_mailer}')))         
 
         allmacro(self)
-        footLine("envfrom")    
+        __logOutput__.footLine("envfrom")    
         return Milter.CONTINUE
     
     def envrcpt(self, mailto, *parameter):
-        headLine("envrcpt")
-        itemLine("mailto", mailto)
-        itemLine(" - parameter", str(parameter))
+        __logOutput__.headLine("envrcpt")
+        __logOutput__.itemLine("mailto", mailto)
+        __logOutput__.itemLine(" - parameter", str(parameter))
         
-        lineLine()
-        itemLine("self.getsymval('{rcpt_addr}')", str(self.getsymval('{rcpt_addr}')))
-        itemLine("self.getsymval('{rcpt_host}')", str(self.getsymval('{rcpt_host}')))
-        itemLine("self.getsymval('{rcpt_mailer}')", str(self.getsymval('{rcpt_mailer}')))
+        __logOutput__.lineLine()
+        __logOutput__.itemLine("self.getsymval('{rcpt_addr}')", str(self.getsymval('{rcpt_addr}')))
+        __logOutput__.itemLine("self.getsymval('{rcpt_host}')", str(self.getsymval('{rcpt_host}')))
+        __logOutput__.itemLine("self.getsymval('{rcpt_mailer}')", str(self.getsymval('{rcpt_mailer}')))
         
         allmacro(self)
-        footLine("envrcpt")
-        headLine("header")    
+        __logOutput__.footLine("envrcpt")
+        __logOutput__.headLine("header")    
         return Milter.CONTINUE        
 
     def header(self, field, value):
-        itemLine("field => value", field + ": " + value)
+        __logOutput__.itemLine("field => value", field + ": " + value)
         return Milter.CONTINUE  
         
     def eoh(self):
-        lineLine()
-        itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
-        itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
-        itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
-        itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
-        itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
-        itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
-        itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
-        itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
-        itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
-        itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
+        __logOutput__.lineLine()
+        __logOutput__.itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
+        __logOutput__.itemLine("self.getsymval('{client_ptr}')", str(self.getsymval('{client_ptr}')))
+        __logOutput__.itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
+        __logOutput__.itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
+        __logOutput__.itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
+        __logOutput__.itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
+        __logOutput__.itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
+        __logOutput__.itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
+        __logOutput__.itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
+        __logOutput__.itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
         allmacro(self)
-        footLine("header")
+        __logOutput__.footLine("header")
         
-        headLine("eoh")
-        itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
+        __logOutput__.headLine("eoh")
+        __logOutput__.itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
         
         allmacro(self)
-        footLine("eoh")
+        __logOutput__.footLine("eoh")
         return Milter.CONTINUE   
 
     def body(self, chunk):
-        headLine("body")
-        itemLine("body", str(chunk))
-        itemLine(" - decoded (UTF-8)", str(chunk.decode('UTF-8')))
+        __logOutput__.headLine("body")
+        __logOutput__.itemLine("body", str(chunk))
+        __logOutput__.itemLine(" - decoded (UTF-8)", str(chunk.decode('UTF-8')))
         
         allmacro(self)
-        footLine("body")
+        __logOutput__.footLine("body")
         return Milter.CONTINUE
 
     def eom(self):
-        headLine("eom")
+        __logOutput__.headLine("eom")
         
-        itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
-        itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
-        itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
-        itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
-        itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
-        itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
-        itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
-        itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
-        itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
+        __logOutput__.itemLine("self.getsymval('{i}')", str(self.getsymval('{i}')))
+        __logOutput__.itemLine("self.getsymval('{auth_authen}')", str(self.getsymval('{auth_authen}')))
+        __logOutput__.itemLine("self.getsymval('{auth_author} ')", str(self.getsymval('{auth_author}')))
+        __logOutput__.itemLine("self.getsymval('{auth_type} ')", str(self.getsymval('{auth_type}')))
+        __logOutput__.itemLine("self.getsymval('{cert_issuer} ')", str(self.getsymval('{cert_issuer} ')))
+        __logOutput__.itemLine("self.getsymval('{cert_subject}')", str(self.getsymval('{cert_subject}')))
+        __logOutput__.itemLine("self.getsymval('{cipher_bits}')", str(self.getsymval('{cipher_bits}')))
+        __logOutput__.itemLine("self.getsymval('{cipher}')", str(self.getsymval('{cipher}')))
+        __logOutput__.itemLine("self.getsymval('{tls_version}')", str(self.getsymval('{tls_version}')))
         
         allmacro(self)
-        footLine("eom")
+        __logOutput__.footLine("eom")
         return Milter.CONTINUE   
 
     def abort(self):
-        headLine("abort")
+        __logOutput__.headLine("abort")
         allmacro(self)
-        footLine("abort")
+        __logOutput__.footLine("abort")
         return Milter.CONTINUE
 
     def close(self):
-        headLine("close")
+        __logOutput__.headLine("close")
         allmacro(self)
-        footLine("close")        
+        __logOutput__.footLine("close")        
         return Milter.CONTINUE
 
 
 def allmacro(self):
-    lineLine()
-    itemLine("self.getsymval('{j}')", str(self.getsymval('{j}')))
-    itemLine("self.getsymval('{_}')", str(self.getsymval('{_}')))
-    itemLine("self.getsymval('{client_addr}')", str(self.getsymval('{client_addr}')))
-    itemLine("self.getsymval('{client_name}')", str(self.getsymval('{client_name}')))
-    itemLine("self.getsymval('{client_port}')", str(self.getsymval('{client_port}')))
-    itemLine("self.getsymval('{daemon_addr}')", str(self.getsymval('{daemon_addr}'))) 
-    itemLine("self.getsymval('{daemon_name}')", str(self.getsymval('{daemon_name}')))
-    itemLine("self.getsymval('{daemon_port}')", str(self.getsymval('{daemon_port}')))
-    itemLine("self.getsymval('{v}')", str(self.getsymval('{v}'))) 
-
-
-def headLine(function):
-    clipLine()
-    listLine(function, "ENTRY")
-    lineLine()
-
-    
-def footLine(function):
-    lineLine()
-    listLine(function, "LEAVE")
-    clipLine()
-
-
-def listLine(function, position):
-    __log__.info(__listFormat__.format("sendmail-pymilter - " + position + ": " + function))
-
-
-def clipLine():
-    __log__.info(__clipChar__ * __lineCharCount__)
-
-    
-def lineLine():
-    __log__.info(__lineChar__ * __lineCharCount__)    
-
-
-def itemLine(itemKey, itemValue):
-    __log__.info(__lineFormat__.format(itemKey, itemValue))
+    __logOutput__.lineLine()
+    __logOutput__.itemLine("self.getsymval('{j}')", str(self.getsymval('{j}')))
+    __logOutput__.itemLine("self.getsymval('{_}')", str(self.getsymval('{_}')))
+    __logOutput__.itemLine("self.getsymval('{client_addr}')", str(self.getsymval('{client_addr}')))
+    __logOutput__.itemLine("self.getsymval('{client_name}')", str(self.getsymval('{client_name}')))
+    __logOutput__.itemLine("self.getsymval('{client_port}')", str(self.getsymval('{client_port}')))
+    __logOutput__.itemLine("self.getsymval('{daemon_addr}')", str(self.getsymval('{daemon_addr}'))) 
+    __logOutput__.itemLine("self.getsymval('{daemon_name}')", str(self.getsymval('{daemon_name}')))
+    __logOutput__.itemLine("self.getsymval('{daemon_port}')", str(self.getsymval('{daemon_port}')))
+    __logOutput__.itemLine("self.getsymval('{v}')", str(self.getsymval('{v}')))
 
 
 class CLIError(Exception):
@@ -370,10 +389,27 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         optional = parser._action_groups.pop()
         required = parser.add_argument_group('required arguments')
-        required.add_argument('-l', '--listener', action='store', nargs=1, default='127.0.0.1', type=str, required=True, help='IPv4-Address where the milter is listening', metavar='<IPv4>', dest='ip')
-        required.add_argument('-p', '--port', action='store', nargs=1, default='10099', type=int, required=True, help='Port where the milter is listening', metavar='<1..65535>')                    
+        required.add_argument('-l', '--listener',
+                              action='store',
+                              nargs=1,
+                              default='127.0.0.1',
+                              type=str,
+                              required=True,
+                              help='IPv4-Address where the milter is listening',
+                              metavar='<IPv4>',
+                              dest='ip')
+        required.add_argument('-p', '--port',
+                              action='store',
+                              nargs=1,
+                              default='10099',
+                              type=int,
+                              required=True,
+                              help='Port where the milter is listening',
+                              metavar='<1..65535>')                    
         parser._action_groups.append(optional)
-        optional.add_argument('-v', '--version', action='version', version=program_version_message)
+        optional.add_argument('-v', '--version',
+                              action='version',
+                              version=program_version_message)
 
         # Process arguments
         args = parser.parse_args()
@@ -386,7 +422,8 @@ USAGE
         
         # Check argument -p, --port if it is a VALID port number, between 1 and 65535.
         if int(args.port[0]) < 1 or int(args.port[0]) > 65535:
-            outError('Required argument -p,--port <port> was NOT a valid port number, between 1 and 65535: %s', str(int(args.port[0])))
+            outError('Required argument -p,--port <port> was NOT a valid port number, between 1 and 65535: %s',
+                     str(int(args.port[0])))
         else:
             global __port__; __port__ = int(args.port[0])
 
@@ -408,18 +445,21 @@ def main():
         sys.exit(0)
         
     __log__.info("%s milter startup" % os.path.basename(sys.argv[0]))
-    clipLine() 
-    __log__.info(__lineFormat__.format("milter version", str(Milter.getversion()[0]) + "." + str(Milter.getversion()[1]) + "." + str(Milter.getversion()[2])))
-    __log__.info(__lineFormat__.format("milter listener", __listener__))
-    __log__.info(__lineFormat__.format("milter port", __port__)) 
-    clipLine()
+    __logOutput__.clipLine() 
+    __logOutput__.itemLine("milter version",
+                           str(Milter.getversion()[0]) 
+                           +"." + str(Milter.getversion()[1]) 
+                           +"." + str(Milter.getversion()[2]))
+    __logOutput__.itemLine("milter listener", __listener__)
+    __logOutput__.itemLine("milter port", __port__)
+    __logOutput__.clipLine()
     # inet:10099@127.0.0.1
     __socketName__ = "inet:" + str(__port__) + "@" + str(__listener__)
     Milter.factory = InfoMilter
     # Tell the milter, which feature we want to use.
     Milter.set_flags(__flags__)
     Milter.runmilter("pythonfilter", __socketName__, __timeout__)
-    clipLine()  
+    __logOutput__.clipLine()  
     __log__.info("%s milter shutdown" % sys.argv[0])
 
 
